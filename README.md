@@ -1,7 +1,7 @@
 Microsoft R Trainings
 =====================
 
-This repository holds material for a series of webinars on Microsoft R. You may also be interested in my more advanced R course materials, available [here](github.com/akzaidi/R-cadence).
+This repository holds material for a series of webinars on Microsoft R. You may also be interested in my more advanced R course materials, available [here](https://github.com/akzaidi/R-cadence).
 
 ## Course Material
 
@@ -19,4 +19,5 @@ I've already configured two virtual machines with the course notebooks and the d
 ## To Do
 
 + ~~add users~~
-+ add notebooks
++ ~~add notebooks~~
++ add data
