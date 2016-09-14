@@ -13,11 +13,8 @@ The course material for this series of webinars are available on gitbook here:
 
 I've already configured two virtual machines with the course notebooks and the data already loaded.
 
-+ [cognizantvm](https://cognizantvm.centralus.cloudapp.azure.com:8000/)
-	* pick a username and password from the following [table](https://github.com/akzaidi/Cognizant-R/blob/master/cogvmusers.csv)
-+ [cognizantdsvm](https://cognizantdsvm.centralus.cloudapp.azure.com:8000/)
-	* pick a username and password from the following [table](https://github.com/akzaidi/Cognizant-R/blob/master/cogdsvmusers.csv)
-+ NOTE: only one login per account, don't reuse usernames from the above tables
++ [VM Number One](https://cogdsvm.eastus.cloudapp.azure.com:8000/)
++ [VM Number Two](https://cogdsvmtwo.eastus.cloudapp.azure.com:8000/)
 
 ## To Do
 

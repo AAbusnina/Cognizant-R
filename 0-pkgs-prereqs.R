@@ -6,9 +6,6 @@ r <- getOption('repos')
 r["CRAN"] <- "https://mran.revolutionanalytics.com/snapshot/2016-09-12/"
 options(repos = r)
 
-# download shapefiles from: http://www.zillow.com/howto/api/neighborhood-boundaries.htm
-download.file("http://www.zillow.com/static/shp/ZillowNeighborhoods-NY.zip", destfile = "data/")
-
 # install R packages
 pkgs_to_install <- c("devtools",
                       "data.table",
