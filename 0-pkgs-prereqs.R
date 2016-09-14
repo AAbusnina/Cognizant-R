@@ -21,6 +21,9 @@ pkgs_to_install <- c("devtools",
 
 pks_missing <- pkgs_to_install[!(pkgs_to_install %in% installed.packages()[, 1])]
 
+# tibble 1.2 needs updated version of Rcpp, so update first
+install.packages("Rcpp")
+
 install.packages(pks_missing)
 
 # ---
