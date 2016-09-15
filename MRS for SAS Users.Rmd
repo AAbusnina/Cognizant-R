@@ -17,8 +17,8 @@ To see how we can use MRS to process and analyze a large dataset, we use the NYC
 rm(list = ls())
 ```
 
-```{r, eval = FALSE}
-user.name <- "alizaidi"
+```{r}
+user.name <- "your_name"
 home_dir <- "/datadrive"
 data_dir <- "/datadrive/data/"
 mydir <- paste(home_dir, user.name, sep = "/")
@@ -91,27 +91,39 @@ Since an anlytics workflow usually consists of cleaning and munging data, and th
 We use the `rxImport` function to covert flat files to XDF files. By letting `append = "rows"`, we can also combine multiple flat files into a single XDF file.
 
 ```{r}
-input_xdf <- 'yellow_tripdata_2015.xdf'
-st <- Sys.time()
-rxImport(input_csv, input_xdf, colClasses = col_classes, overwrite = TRUE)
+## NOTE: we have already imported the data to let you 
+## start working immediately
 
-for(ii in 2:3) { # get each month's data and append it to the first month's data
-    input_csv <- sprintf(paste0(data_dir, "yellow_tripdata_2015-%02d.csv"), ii)
-    rxImport(input_csv, input_xdf, 
-             colClasses = col_classes, 
-             overwrite = TRUE,
-             type = "textFast",
-             append = "rows")
-    print(input_csv)
-}
-Sys.time() - st # stores the time it took to import
+## You can either use the full three months of data (38 million row)
+## or you can use the 10% sample (3.8 million rows)
+
+## The full three months of dataa will take roughly 8 - 10 mins for each chunk to process
+## The subset will be much faster (1 - 2 mins per chunk)
+
+#input_xdf <- 'yellow_tripdata_2015.xdf'
+#st <- Sys.time()
+#rxImport(input_csv, input_xdf, colClasses = col_classes, overwrite = TRUE)
+
+#for(ii in 2:3) { # get each month's data and append it to the first month's data
+    #input_csv <- sprintf(paste0(data_dir, "yellow_tripdata_2015-%02d.csv"), ii)
+    #rxImport(input_csv, input_xdf, 
+             #colClasses = col_classes, 
+             #overwrite = TRUE,
+             #type = "textFast",
+             #rowsPerRead = 10^6*5,
+             #append = "rows")
+    #print(input_csv)
+#}
+#Sys.time() - st # stores the time it took to import
 ```
 
 We are now ready to use the XDF dataset for processing and analysis.  Firstly, we can start by looking at the column types, the first few rows of the data, and a summary of the `fare_amount` column.
 
 ```{r}
-input_xdf <- 'yellow_tripdata_2015.xdf'
+input_xdf <- paste0(data_dir, 'yellow_tripdata_2015.xdf')
 nyc_xdf <- RxXdfData(input_xdf)
+# use sample, it's faster!
+nyc_xdf <- RxXdfData(paste0(data_dir, "yellow_tripdata_sample.xdf"))
 rxSummary( ~ fare_amount, nyc_xdf) # provide statistical summaries for fare amount
 ```
 
@@ -122,8 +134,9 @@ methods(summary)
 Note that we could have done the same analysis with the original CSV file and skipped XDF coversion. Since we have a separate CSV file for each month, unless we combine the CSV files, we can only get the summary for one month's data.  For our purposes that will be enough.  To run `rxSummary` on the CSV file, we simply create a pointer to the CSV file using `RxTextData` (instead of `RxXdfData` as was the case above) and pass the column types directly to it.  The rest is the same.  Notice how running the summary on the CSV file takes considerably longer (even though the CSV file comprises only one month's data).
 
 ```{r}
-nyc_csv <- RxTextData(input_csv, colClasses = col_classes) # point to CSV file and provide column info
-rxSummary( ~ fare_amount, nyc_csv) # provide statistical summaries for fare amount
+## Long chunk, takes time
+#nyc_csv <- RxTextData(input_csv, colClasses = col_classes) # point to CSV file and provide column info
+#rxSummary( ~ fare_amount, nyc_csv) # provide statistical summaries for fare amount
 ```
 
 The last example was run to demonstrate `RevoScaleR`'s capabilty to work directly with flat files (even though they take longer than XDF files), but since our analysis involves lots of data processing and running various analytics functions, from now on we work with the XDF file, so we can benefit from faster runtime.
@@ -149,9 +162,10 @@ This is where we encounter the `rxDataStep` function, a function that we will re
 In a local compute context, when we run `rxDataStep`, we specify an `inData` argument which can point to a `data.frame` or a CSV or XDF file.  We also have an `outFile` argument that points to the file we are outputting to, and if both `inData` and `outFile` point to the same file, we must set `overwrite = TRUE`.  **Note that `outFile` is an optional argument: leaving it out will output the result into a `data.frame`.  However, in most cases that is not what we want, so we need to specify `outFile`.**
 
 ```{r}
-rxDataStep(nyc_xdf, nyc_xdf, 
-           transforms = list(tip_percent = tip_amount/fare_amount),
-           overwrite = TRUE)
+system.time(rxDataStep(nyc_xdf, nyc_xdf,
+                       transforms = list(tip_percent = tip_amount / fare_amount),
+                       overwrite = TRUE,
+                       blocksPerRead = 1))
 rxSummary( ~ tip_percent, nyc_xdf)
 ```
 
@@ -190,7 +204,7 @@ Before we apply the transformation to the data, it's ususally a good idea to tes
 
 ```{r}
 library(lubridate)
-Sys.setenv(TZ = "US/Eastern") # not important for this dataset
+#Sys.setenv(TZ = "US/Eastern") # not important for this dataset
 head(f_datetime_transformations(nyc_sample_df)) # test the function on a data.frame
 ```
 
@@ -210,7 +224,8 @@ rxDataStep(nyc_xdf,
            nyc_xdf, 
            overwrite = TRUE, 
            transformFunc = f_datetime_transformations, 
-           transformPackages = "lubridate")
+           transformPackages = "lubridate",
+           blocksPerRead = 4)
 Sys.time() - st
 ```
 
@@ -259,7 +274,8 @@ library(rgeos)
 library(sp)
 library(maptools)
 
-nyc_shapefile <- readShapePoly(paste0(data_dir, 'ZillowNeighborhoods-NY/ZillowNeighborhoods-NY.shp'))
+nyc_shapefile <- readShapePoly(paste0(data_dir,
+                             'ZillowNeighborhoods-NY/ZillowNeighborhoods-NY.shp'))
 mht_shapefile <- subset(nyc_shapefile, str_detect(CITY, 'New York City-Manhattan'))
 
 mht_shapefile@data$id <- as.character(mht_shapefile@data$NAME)
@@ -323,7 +339,8 @@ rxDataStep(nyc_xdf, nyc_xdf,
            overwrite = TRUE, 
            transformFunc = find_nhoods, 
            transformPackages = c("sp", "maptools", "rgeos"),
-           transformObjects = list(shapefile = nyc_shapefile))
+           transformObjects = list(shapefile = nyc_shapefile),
+           blocksPerRead = 3)
 
 Sys.time() - st
 head(nyc_xdf)
@@ -403,7 +420,7 @@ Let's see how we could use `RevoScaleR` to examine the data for outliers.  Our a
 ```{r}
 # outFile argument missing means we output to data.frame
 odd_trips <- rxDataStep(nyc_xdf, rowSelection = (
-  u < .05 & ( # we can adjust this if the data gets too big
+  u < .50 & ( # we can adjust this if the data gets too big
     (trip_distance > 50 | trip_distance <= 0) |
     (passenger_count > 5 | passenger_count == 0) |
     (fare_amount > 5000 | fare_amount <= 0)
@@ -465,8 +482,8 @@ We can use the `ggmap` package to visually inspect the sample data.  If we zoom 
 ```{r}
 library(ggmap)
 # map_13 <- get_map(location =  c(lon = -73.98, lat = 40.76), zoom = 13)
-# map_14 <- get_map(location =  c(lon = -73.98, lat = 40.76), zoom = 14)
-# map_15 <- get_map(location =  c(lon = -73.98, lat = 40.76), zoom = 15)
+ map_14 <- get_map(location =  c(lon = -73.98, lat = 40.76), zoom = 14)
+ map_15 <- get_map(location =  c(lon = -73.98, lat = 40.76), zoom = 15)
 
 q1 <- ggmap(map_14) + 
   geom_point(aes(x = dropoff_longitude, y = dropoff_latitude), 
