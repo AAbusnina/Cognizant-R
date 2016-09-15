@@ -18,17 +18,13 @@ rm(list = ls())
 ```
 
 ```{r, eval = FALSE}
-user.name <- # put user name here
-mydir <- sprintf('C:/Data/NYC_Taxi/%s/', user.name)
+user.name <- "alizaidi"
+home_dir <- "/datadrive"
+data_dir <- "/datadrive/data/"
+mydir <- paste(home_dir, user.name, sep = "/")
 dir.create(mydir)
 
 setwd(mydir)
-```
-
-```{r}
-download.file("https://alizaidi.blob.core.windows.net/training/yellow_tripdata_2015.xdf", destfile = "../R-cadence/data/yellow_tripdata_2015.xdf")
-yellow_
-
 ```
 
 ```{r}
@@ -79,7 +75,7 @@ col_classes <- c('VendorID' = "factor",
 It is a good practice to also load a sample of the data as a `data.frame` in R.  When we want to apply a function to the XDF data, we can first apply it to the `data.frame` where it's easier and faster to catch errors, before applying it to the whole data.  We will later learn a method for taking a random sample from the data, but for now the sample simply consists of the first 1000 rows.
 
 ```{r}
-input_csv <- 'C:/Data/NYC_Taxi/yellow_tripdata_2015-01.csv'
+input_csv <- paste0(data_dir, 'yellow_tripdata_2015-01.csv')
 # we take a chunk of the data and load it as a data.frame (good for testing things)
 nyc_sample_df <- read.csv(input_csv, nrows = 1000, colClasses = col_classes)
 head(nyc_sample_df)
@@ -100,9 +96,13 @@ st <- Sys.time()
 rxImport(input_csv, input_xdf, colClasses = col_classes, overwrite = TRUE)
 
 for(ii in 2:3) { # get each month's data and append it to the first month's data
- input_csv <- sprintf('C:/Data/NYC_Taxi/yellow_tripdata_2015-%02d.csv', ii)
- rxImport(input_csv, input_xdf, colClasses = col_classes, overwrite = TRUE, append = "rows")
- print(input_csv)
+    input_csv <- sprintf(paste0(data_dir, "yellow_tripdata_2015-%02d.csv"), ii)
+    rxImport(input_csv, input_xdf, 
+             colClasses = col_classes, 
+             overwrite = TRUE,
+             type = "textFast",
+             append = "rows")
+    print(input_csv)
 }
 Sys.time() - st # stores the time it took to import
 ```
@@ -150,7 +150,7 @@ In a local compute context, when we run `rxDataStep`, we specify an `inData` arg
 
 ```{r}
 rxDataStep(nyc_xdf, nyc_xdf, 
-           transforms = list(tip_percent = as.integer(tip_amount*100 / (tip_amount + fare_amount))),
+           transforms = list(tip_percent = tip_amount/fare_amount),
            overwrite = TRUE)
 rxSummary( ~ tip_percent, nyc_xdf)
 ```
@@ -197,14 +197,20 @@ head(f_datetime_transformations(nyc_sample_df)) # test the function on a data.fr
 We run one last test before applying the transformation.  Recall that `rxDataStep` works with a `data.frame` input too, and that leaving the `outFile` argument means we return a `data.frame`.  So we can perform the above test with `rxDataStep` by passing transformation function to `transformFunc` and specifying the required packages in `transformPackages`.
 
 ```{r}
-head(rxDataStep(nyc_sample_df, transformFunc = f_datetime_transformations, transformPackages = "lubridate"))
+head(rxDataStep(nyc_sample_df, 
+                transformFunc = f_datetime_transformations, 
+                transformPackages = "lubridate"))
 ```
 
 Everything seems to be working well.  This does not guarantee that running the transformation function on the whole dataset will succeed, but it makes it less likely to fail for the wrong reasons.  If the transformation works on the sample `data.frame`, as it does above, but fails when we run it on the whole dataset, then it is usually because of something in the dataset that causes it to fail (such as missing values) that was not present in the sample data.  We now run the transformation on the whole data set.
 
 ```{r}
 st <- Sys.time()
-rxDataStep(nyc_xdf, nyc_xdf, overwrite = TRUE, transformFunc = f_datetime_transformations, transformPackages = "lubridate")
+rxDataStep(nyc_xdf, 
+           nyc_xdf, 
+           overwrite = TRUE, 
+           transformFunc = f_datetime_transformations, 
+           transformPackages = "lubridate")
 Sys.time() - st
 ```
 
@@ -253,7 +259,7 @@ library(rgeos)
 library(sp)
 library(maptools)
 
-nyc_shapefile <- readShapePoly('C:/Data/NYC_Taxi/ZillowNeighborhoods-NY/ZillowNeighborhoods-NY.shp')
+nyc_shapefile <- readShapePoly(paste0(data_dir, 'ZillowNeighborhoods-NY/ZillowNeighborhoods-NY.shp'))
 mht_shapefile <- subset(nyc_shapefile, str_detect(CITY, 'New York City-Manhattan'))
 
 mht_shapefile@data$id <- as.character(mht_shapefile@data$NAME)
@@ -303,7 +309,9 @@ Once again, it is a good idea to try the transformation function on the sample `
 
 ```{r}
 # test the function on a data.frame using rxDataStep
-head(rxDataStep(nyc_sample_df, transformFunc = find_nhoods, transformPackages = c("sp", "maptools"), 
+head(rxDataStep(nyc_sample_df, 
+                transformFunc = find_nhoods, 
+                transformPackages = c("sp", "maptools"),
                 transformObjects = list(shapefile = nyc_shapefile)))
 ```
 
@@ -311,7 +319,10 @@ Since everything went well, we can now apply the transformation to the whole dat
 
 ```{r}
 st <- Sys.time()
-rxDataStep(nyc_xdf, nyc_xdf, overwrite = TRUE, transformFunc = find_nhoods, transformPackages = c("sp", "maptools", "rgeos"), 
+rxDataStep(nyc_xdf, nyc_xdf, 
+           overwrite = TRUE, 
+           transformFunc = find_nhoods, 
+           transformPackages = c("sp", "maptools", "rgeos"),
            transformObjects = list(shapefile = nyc_shapefile))
 
 Sys.time() - st
@@ -336,7 +347,10 @@ nhoods_by_borough <- nhoods_by_borough$counts[[1]]
 nhoods_by_borough <- as.data.frame(nhoods_by_borough)
 
 # get the neighborhoods by borough
-lnbs <- lapply(names(nhoods_by_borough), function(vv) subset(nhoods_by_borough, nhoods_by_borough[ , vv] > 0, select = vv, drop = FALSE))
+lnbs <- lapply(names(nhoods_by_borough), 
+                function(vv) subset(nhoods_by_borough, 
+                                    nhoods_by_borough[, vv] > 0, 
+                                    select = vv, drop = FALSE))
 print(lnbs)
 ```
 
@@ -351,10 +365,10 @@ refactor_columns <- function(dataList) {
   dataList
 }
 
-rxDataStep(nyc_xdf, nyc_xdf, 
+system.time(rxDataStep(nyc_xdf, nyc_xdf,
            transformFunc = refactor_columns,
            transformObjects = list(nhoods_levels = manhattan_nhoods),
-           overwrite = TRUE)
+           overwrite = TRUE, blocksPerRead = 5))
 
 rxSummary( ~ pickup_nb, nyc_xdf)
 ```
