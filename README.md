@@ -15,9 +15,11 @@ I've already configured two virtual machines with the course notebooks and the d
 
 + [VM Number One](https://cogdsvm.eastus.cloudapp.azure.com:8000/)
 + [VM Number Two](https://cogdsvmtwo.eastus.cloudapp.azure.com:8000/)
++ [VM Number Three](https://cogdsvmthree.eastus.cloudapp.azure.com:8000/)
 
-## To Do
+## Running the Labs Yourself
 
-+ ~~add users~~
-+ ~~add notebooks~~
-+ ~~add data~~
+You can run the class labs yourself. The notebook is saved in this repository, and the data are available [here](http://alizaidi.blob.core.windows.net/training/nyctaxidata.zip). You can use either of the Azure DSVMs (Linux or Windows) to get a working version of MRS.
+
++ [Linux DSVM](https://github.com/Azure/Azure-MachineLearning-DataScience/tree/master/Data-Science-Virtual-Machine/Linux)
++ [Windows DSVM](https://github.com/Azure/Azure-MachineLearning-DataScience/tree/master/Data-Science-Virtual-Machine/Windows)
