@@ -23,7 +23,7 @@ home_dir <- "/datadrive"
 data_dir <- "/datadrive/data/"
 mydir <- paste(home_dir, user.name, sep = "/")
 dir.create(mydir)
-
+dir.create(paste0(mydir, "/data"))
 setwd(mydir)
 ```
 
@@ -121,9 +121,12 @@ We are now ready to use the XDF dataset for processing and analysis.  Firstly, w
 
 ```{r}
 input_xdf <- paste0(data_dir, 'yellow_tripdata_2015.xdf')
+sample_xdf <- paste0(data_dir, 'yellow_tripdata_sample.xdf')
+sample_user <- "data/yellow_tripdata_sample.xdf"
+file.copy(sample_xdf, sample_user)
 nyc_xdf <- RxXdfData(input_xdf)
 # use sample, it's faster!
-nyc_xdf <- RxXdfData(paste0(data_dir, "yellow_tripdata_sample.xdf"))
+nyc_xdf <- RxXdfData(sample_user)
 rxSummary( ~ fare_amount, nyc_xdf) # provide statistical summaries for fare amount
 ```
 
