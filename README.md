@@ -15,7 +15,7 @@ I've already configured two virtual machines with the course notebooks and the d
 
 + [VM Number One](https://cogdsvm.eastus.cloudapp.azure.com:8000/)
 + [VM Number Two](https://cogdsvmtwo.eastus.cloudapp.azure.com:8000/)
-+ [VM Number Three](https://cogdsvmthree.eastus.cloudapp.azure.com:8000/)
++ [VM Number Three](https://cogdsvmthree.centralus.cloudapp.azure.com:8000/)
 
 ### Etiquette for Using the VMs
 
